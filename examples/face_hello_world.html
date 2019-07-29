@@ -40,16 +40,54 @@
   <script>
     window.onload = function() {
       var img = document.getElementById('img');
+      let canvas = document.createElement('canvas')
+      var context = canvas.getContext('2d');
+      context.drawImage( img, 0, 0 );
+      let width = img.width
+      let height = img.height
+      tracking.Fast.THRESHOLD = 30
+      var imageData = context.getImageData(0, 0, width, height);
+      var gray = tracking.Image.grayscale(imageData.data, width, height);
+      var corners = tracking.Fast.findCorners(gray, width, height);
+      let cornersP = corners.map((c, i, a) => {
+        if(i % 2 == 1) {
+          return {x: a[i-1], y:c }
+        }
+        return null
+      }).filter(it => it != null)
+      
 
-      var tracker = new tracking.ObjectTracker(['face', 'eye', 'mouth']);
+
+      console.log('sj ?', corners)
+
+      // var tracker = new tracking.ObjectTracker(['face', 'eye', 'mouth']);
+      var tracker = new tracking.ObjectTracker(['eye']);
       tracker.setStepSize(1.7);
+
 
       tracking.track('#img', tracker);
 
       tracker.on('track', function(event) {
-        event.data.forEach(function(rect) {
-          window.plot(rect.x, rect.y, rect.width, rect.height);
-        });
+        console.log('sj ', event)
+
+        const r = cornersP.filter(p => {
+          // window.plot(p.x, p.y, 5, 5)
+          let isIn = false
+          event.data.forEach(function(rect) {
+            window.plot(rect.x, rect.y, rect.width, rect.height);
+            if(p.x >= rect.x 
+            && p.x <= rect.x + rect.width 
+            && p.y >= rect.y 
+            && p.y <= rect.y + rect.height ) {
+              isIn = true
+              window.plot(p.x, p.y, 3, 3)
+            }
+          });
+          return isIn
+        })
+
+
+        console.log('sj result', r)
       });
 
       window.plot = function(x, y, w, h) {
