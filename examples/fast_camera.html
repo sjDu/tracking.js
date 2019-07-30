@@ -8,20 +8,21 @@
   <link rel="stylesheet" href="assets/demo.css">
 
   <script src="../build/tracking-min.js"></script>
+  <script src="../build/data/eye-min.js"></script>
   <script src="../node_modules/dat.gui/build/dat.gui.min.js"></script>
   <script src="assets/stats.min.js"></script>
 
   <style>
   #video {
     position: absolute;
-    top: -1000px;
+    /* top: -1000px; */
   }
 
   #canvas {
-    left: 50%;
+    /* left: 50%;
     top: 50%;
     margin-left: -200px;
-    margin-top: -150px;
+    margin-top: -150px; */
     position: absolute;
   }
   </style>
@@ -47,7 +48,7 @@
     };
     tracking.inherits(FastTracker, tracking.Tracker);
 
-    tracking.Fast.THRESHOLD = 2;
+    tracking.Fast.THRESHOLD = 30;
     FastTracker.prototype.threshold = tracking.Fast.THRESHOLD;
 
     FastTracker.prototype.track = function(pixels, width, height) {
@@ -55,13 +56,15 @@
       var gray = tracking.Image.grayscale(pixels, width, height);
       var corners = tracking.Fast.findCorners(gray, width, height);
       stats.end();
+      const eye = tracking.ViolaJones.detect(pixels, width, height, this.getInitialScale(), this.getScaleFactor(), this.getStepSize(), this.getEdgesDensity(), 'eye')
 
       this.emit('track', {
-        data: corners
+        data: corners,
+        eye,
       });
     };
 
-    var tracker = new FastTracker();
+    var tracker = new FastTracker();  
 
     tracker.on('track', function(event) {
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -70,9 +73,28 @@
         context.fillStyle = '#f00';
         context.fillRect(corners[i], corners[i + 1], 2, 2);
       }
+
+      var eyes = event.eye
+      eyes.map(rect => {
+        context.strokeStyle = '#0ff';
+        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+      })
     });
 
     tracking.track('#video', tracker, { camera: true });
+
+    var tracker2 = new tracking.ObjectTracker(['eye']);
+    tracker2.setStepSize(1.7);
+    tracker2.on('track', function(event) {
+      // context.clearRect(0, 0, canvas.width, canvas.height);
+      event.data.map(rect => {
+        context.strokeStyle = '#0ff';
+        context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+      })
+    })
+    // tracking.track('#video', tracker2, { camera: true });
+
+
 
     // GUI Controllers
     var gui = new dat.GUI();

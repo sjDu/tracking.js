@@ -36,14 +36,15 @@
     <div class="demo-container">
       <!-- <img id="image" src="assets/fast.png" /> -->
       <img id="image" src="assets/faces.jpg" />
-      <canvas id="canvas" width="400" height="400"></canvas>
+      <!-- <canvas id="canvas" width="600" height="346"></canvas> -->
+      <canvas id="canvas" width="600" height="346"></canvas>
     </div>
   </div>
 
   <script>
     window.onload = function() {
-      var width = 400;
-      var height = 400;
+      var width = 600;
+      var height = 346;
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');
 
@@ -53,7 +54,7 @@
       tracker.setStepSize(1.7);
       tracking.track('#image', tracker);
 
-      window.fastThreshold = 10;
+      window.fastThreshold = 30;
       tracker.on('track', function(event) {
         
         var doFindFeatures = function() {
@@ -67,34 +68,58 @@
           var corners = tracking.Fast.findCorners(gray, width, height);
           // var corners = tracking.Fast.findCorners(imageData.data, width, height);
 
-          for (var i = 0; i < corners.length; i += 2) {
-            const x = corners[i]
-            const y = corners[i+1]
-            let isIn = false
-            event.data.forEach(function(rect) {
-              // window.plot(rect.x, rect.y, rect.width, rect.height);
+          
+          let isIn = false
+          let rects = []
+          event.data.forEach(function(rect) {
+            // window.plot(rect.x, rect.y, rect.width, rect.height);
+            let t = {
+              rect,
+              points:[]
+            }
+            rects.push(t)
+            context.strokeStyle = '#0ff';
+            context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+            for (var i = 0; i < corners.length; i += 2) {
+              const x = corners[i]
+              const y = corners[i+1]
               if(x >= rect.x 
               && x <= rect.x + rect.width 
               && y >= rect.y 
               && y <= rect.y + rect.height ) {
-                isIn = true
+                
                 // window.plot(p.x, p.y, 3, 3)
+                t.points.push({x,y})
+                // context.fillStyle = '#f00';
+                // context.fillRect(x, y, 10, 10);
               }
-            });
-
-            if(isIn) {
-              context.fillStyle = '#f00';
-              context.fillRect(corners[i], corners[i + 1], 3, 3);
             }
-          }
+
+          });
+          rects.map(r => {
+            let x = 0
+            let y = 0
+            const l = r.points.length
+            r.points.map(p => {
+              x += p.x
+              y += p.y
+            })
+            x /= l
+            y /= l
+            context.fillStyle = '#f00';
+            context.fillRect(x, y, 6, 6);
+          })
+          window.rects = rects
+
+          
         };
 
         doFindFeatures();
+        var gui = new dat.GUI();
+        gui.add(window, 'fastThreshold', 0, 100).onChange(doFindFeatures);
       })
 
 
-      var gui = new dat.GUI();
-      gui.add(window, 'fastThreshold', 0, 100).onChange(doFindFeatures);
     }
   </script>
 </body>
